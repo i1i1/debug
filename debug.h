@@ -123,14 +123,36 @@ int printf(const char *restrict format, ...);
                     double: "%g", \
                long double: "%Lg", \
            _Complex double: "%g + %gi", \
-                    char *: "%s", \
                     void *: "%p", \
-         char[sizeof(arg)]: "%s", \
+                   default: "%s" \
+)
+
+#define __dispatch(arg) _Generic((arg), \
+                      char: (arg), \
+               signed char: (arg), \
+             unsigned char: (arg), \
+              signed short: (arg), \
+            unsigned short: (arg), \
+                signed int: (arg), \
+              unsigned int: (arg), \
+                  long int: (arg), \
+         unsigned long int: (arg), \
+             long long int: (arg), \
+    unsigned long long int: (arg), \
+                     _Bool: (arg), \
+                     float: (arg), \
+                    double: (arg), \
+               long double: (arg), \
+           _Complex double: (arg), \
+                    char *: (arg), \
+                    void *: (arg), \
+         char[sizeof(arg)]: (arg), \
+	custom_dispatch(arg) \
                    default: "<unknown>" \
 )
 
-/* Print an argument regardless of its type (see __format). */
-#define __print_arg(arg) printf(__format(arg), arg)
+/* Print an argument regardless of its type (see __format __dispatch). */
+#define __print_arg(arg) printf(__format(arg), __dispatch(arg))
 
 /* __nargs_0 calls __nargs_1 with all the arguments, plus 15 twos and 1 one at
  * the end (the zero is there just to avoid a warning when __nargs_1 has an
@@ -148,23 +170,23 @@ int printf(const char *restrict format, ...);
 
 /* Eval what follows as many times as necessary. */
 #define __print_0(...) __eval_0(__print_1(__VA_ARGS__))
-    /* Get the cardinality of the arguments. */
-    #define __print_1(P, ...) __print_2(__nargs_0(__VA_ARGS__), P, __VA_ARGS__)
-    /* Force a preprocessor pass, to eval the __nargs_0 macro. */
-    #define __print_2(num, ...) __print_3(num, __VA_ARGS__)
-    /* Switch based on the number of arguments. */
-    #define __print_3(num, ...) __arg_ ## num (__VA_ARGS__)
-    /* If there's only one argument: */
-        /* Print the argument. */
-        #define __arg_1(P, arg) P ## 1(arg)
-    /* If there's two or more arguments: */
-        /* Print the first argument. */
-        #define __arg_2(P, arg, ...) P ## 2(arg), __loop(P, __VA_ARGS__)
-        /* Call __print_1 with the rest of the arguments. */
-        #define __loop(...) __loop_helper __empty_helper() () (__VA_ARGS__)
-            /* Loop helpers, they force re-evaluation after the first pass. */
-            #define __loop_helper() __print_1
-            #define __empty_helper()
+/* Get the cardinality of the arguments. */
+#define __print_1(P, ...) __print_2(__nargs_0(__VA_ARGS__), P, __VA_ARGS__)
+/* Force a preprocessor pass, to eval the __nargs_0 macro. */
+#define __print_2(num, ...) __print_3(num, __VA_ARGS__)
+/* Switch based on the number of arguments. */
+#define __print_3(num, ...) __arg_ ## num (__VA_ARGS__)
+/* If there's only one argument: */
+/* Print the argument. */
+#define __arg_1(P, arg) P ## 1(arg)
+/* If there's two or more arguments: */
+/* Print the first argument. */
+#define __arg_2(P, arg, ...) P ## 2(arg), __loop(P, __VA_ARGS__)
+/* Call __print_1 with the rest of the arguments. */
+#define __loop(...) __loop_helper __empty_helper() () (__VA_ARGS__)
+/* Loop helpers, they force re-evaluation after the first pass. */
+#define __loop_helper() __print_1
+#define __empty_helper()
 
 /* These wrappers of __print_0 receive custom argument printing functions, and
  * take care of the formatting and printing of the arguments, and the optional
@@ -193,8 +215,8 @@ int printf(const char *restrict format, ...);
 #define idebug(...) __idebug_0(__nargs_0(__VA_ARGS__), __VA_ARGS__)
 #define __idebug_0(num, ...) __idebug_1(num, __VA_ARGS__)
 #define __idebug_1(num, ...) __idebug_arg_ ## num (__VA_ARGS__)
-    #define __idebug_arg_1(...) __custom_idebug(__debug_P_, " ", __VA_ARGS__)
-    #define __idebug_arg_2(...) __custom_idebug(__idebug_P_, "\n", __VA_ARGS__)
+#define __idebug_arg_1(...) __custom_idebug(__debug_P_, " ", __VA_ARGS__)
+#define __idebug_arg_2(...) __custom_idebug(__idebug_P_, "\n", __VA_ARGS__)
 
 /* Here be debug_raw and idebug_raw */
 
